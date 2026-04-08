@@ -1,4 +1,4 @@
-import { Bell, PanelRightClose } from "lucide-react";
+import { Bell } from "lucide-react";
 import Image from "next/image";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 
@@ -33,11 +33,6 @@ export function AppHeader() {
           </div>
         </div>
         <LogoutButton />
-        <PanelRightClose
-          className="ml-1 size-[18px] shrink-0 cursor-pointer text-sicarf-gray-400 hover:text-sicarf-gray-600"
-          strokeWidth={2}
-          aria-label="Recolher painel"
-        />
       </div>
     </header>
   );

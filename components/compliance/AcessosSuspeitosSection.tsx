@@ -1,4 +1,3 @@
-import { UserSearch } from "lucide-react";
 import { BtnAcao } from "@/components/ui/BtnAcao";
 import { Paginacao } from "@/components/ui/Paginacao";
 import { PanelCard } from "@/components/ui/PanelCard";
@@ -6,34 +5,36 @@ import { Pill } from "@/components/ui/Pill";
 import { SecTitle } from "@/components/ui/SecTitle";
 import { SubDesc } from "@/components/ui/SubDesc";
 import { Tabela, Td } from "@/components/ui/Tabela";
-import { ACESSOS_FORA_HORARIO } from "@/lib/data/mock";
+import { DILIGENCIAS_CARTORIAIS } from "@/lib/data/mock";
 import { S } from "@/lib/colors";
 
 export function AcessosSuspeitosSection() {
   return (
     <PanelCard>
-      <SecTitle icon={UserSearch}>
-        Acessos Suspeitos — Atividades Fora do Horário Habitual
+      <SecTitle>
+        Diligências Cartoriais — Monitoramento de Solicitações aos Cartórios
       </SecTitle>
       <SubDesc>
-        Servidores que acessaram o SICARF fora do horário comercial (08h–18h) ou
-        em finais de semana. Registros extraídos automaticamente dos logs de
-        rastreabilidade do sistema.
+        Solicitações formais da Corregedoria aos cartórios para esclarecimento
+        ou correção de irregularidades detectadas nos processos de regularização
+        fundiária no estado do Pará.
       </SubDesc>
       <Tabela
         colunas={[
           "ID",
-          "Servidor",
-          "Cargo / Setor",
-          "Data",
-          "Horário",
-          "Processo Acessado",
-          "Ação Realizada",
-          "IP de Origem",
-          "Risco",
+          "Processo",
+          "Município",
+          "Cartório",
+          "Tipo de Diligência",
+          "Solicitado Por",
+          "Data Abertura",
+          "Prazo",
+          "Status",
+          "Prioridade",
+          "Observação",
           "Ações",
         ]}
-        linhas={ACESSOS_FORA_HORARIO}
+        linhas={DILIGENCIAS_CARTORIAIS}
         renderLinha={(r) => (
           <>
             <Td>
@@ -42,32 +43,53 @@ export function AcessosSuspeitosSection() {
               </span>
             </Td>
             <Td>
-              <strong className="text-sicarf-gray-900">{r.servidor}</strong>
-            </Td>
-            <Td>
-              <span className="block text-sicarf-gray-700">{r.cargo}</span>
-              <span className="text-[11px] text-sicarf-gray-400">{r.setor}</span>
-            </Td>
-            <Td className="whitespace-nowrap text-sicarf-gray-600">{r.data}</Td>
-            <Td>
-              <span className="text-sm font-bold text-sicarf-red">
-                {r.horario}
-              </span>
-            </Td>
-            <Td>
               <span className="font-mono text-xs">{r.processo}</span>
             </Td>
-            <Td className="max-w-[200px] text-sicarf-gray-700">{r.acao}</Td>
+            <Td>{r.municipio}</Td>
+            <Td className="max-w-[220px] text-sicarf-gray-700">{r.cartorio}</Td>
+            <Td>{r.tipo}</Td>
+            <Td>{r.solicitadoPor}</Td>
+            <Td className="whitespace-nowrap text-sicarf-gray-600">
+              {r.dataAbertura}
+            </Td>
+            <Td
+              className={`whitespace-nowrap ${
+                r.status === "Atrasada"
+                  ? "font-bold text-sicarf-red"
+                  : "text-sicarf-gray-700"
+              }`}
+            >
+              {r.dataPrazo}
+            </Td>
             <Td>
-              <span className="font-mono text-[11px] text-sicarf-gray-500">
-                {r.ip}
+              <span
+                className={`font-semibold ${
+                  r.status === "Atrasada"
+                    ? "font-bold text-sicarf-red"
+                    : r.status === "Pendente"
+                      ? "text-sicarf-orange"
+                      : r.status === "Concluída"
+                        ? "text-sicarf-green"
+                        : "text-sicarf-blue"
+                }`}
+              >
+                {r.status}
               </span>
             </Td>
             <Td>
               <Pill
-                label={r.risco}
-                bg={r.risco === "Alto" ? S.red : S.orange}
+                label={r.prioridade}
+                bg={
+                  r.prioridade === "Alta"
+                    ? S.red
+                    : r.prioridade === "Média"
+                      ? S.orange
+                      : S.green
+                }
               />
+            </Td>
+            <Td className="max-w-[260px] text-xs text-sicarf-gray-700">
+              {r.observacao}
             </Td>
             <Td>
               <BtnAcao />
@@ -75,7 +97,7 @@ export function AcessosSuspeitosSection() {
           </>
         )}
       />
-      <Paginacao total={ACESSOS_FORA_HORARIO.length} />
+      <Paginacao total={DILIGENCIAS_CARTORIAIS.length} />
     </PanelCard>
   );
 }

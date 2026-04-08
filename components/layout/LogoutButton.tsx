@@ -20,7 +20,6 @@ export function LogoutButton() {
       aria-label="Sair"
     >
       <LogOut className="size-3.5" strokeWidth={2} />
-      Sair
     </button>
   );
 }

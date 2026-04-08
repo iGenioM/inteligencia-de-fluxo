@@ -1,20 +1,20 @@
 "use client";
 
 import {
-  MapPin,
+  FileText,
+  Mail,
+  PenTool,
   PenLine,
-  Shield,
   Timer,
-  UserSearch,
 } from "lucide-react";
 import { useState } from "react";
 import { Totalizador } from "@/components/ui/Totalizador";
 import {
-  ACESSOS_FORA_HORARIO,
+  ASSINATURAS_PENDENTES,
   ANOMALIAS_PRAZO,
-  PRIVILEGIOS_SUSPEITOS,
+  DILIGENCIAS_CARTORIAIS,
+  MENSAGENS_COMUNICACAO,
   RETIFICACOES,
-  VISTORIAS_FANTASMA,
 } from "@/lib/data/mock";
 import { S } from "@/lib/colors";
 import { AcessosSuspeitosSection } from "./AcessosSuspeitosSection";
@@ -25,45 +25,45 @@ import { RetificacoesSection } from "./RetificacoesSection";
 import { VistoriasFantasmaSection } from "./VistoriasFantasmaSection";
 
 export type ComplianceSecao =
-  | "acessos"
-  | "privilegios"
-  | "vistorias"
+  | "diligencias"
+  | "mensagens"
+  | "assinaturas"
   | "retificacoes"
   | "prazos";
 
 export function DashCompliance() {
-  const [secao, setSecao] = useState<ComplianceSecao>("acessos");
-
-  const maxVistoriaKm = Math.max(
-    ...VISTORIAS_FANTASMA.map((v) => v.distanciaKm),
-  );
+  const [secao, setSecao] = useState<ComplianceSecao>("diligencias");
 
   return (
     <div>
       <div className="mb-5 flex flex-wrap gap-3">
         <Totalizador
-          label="Acessos Suspeitos"
-          valor={ACESSOS_FORA_HORARIO.length}
-          badge={`${ACESSOS_FORA_HORARIO.filter((a) => a.risco === "Alto").length} alto risco`}
-          icone={<UserSearch strokeWidth={2} />}
-          ativo={secao === "acessos"}
-          onClick={() => setSecao("acessos")}
+          label="Diligências Cartoriais"
+          valor={DILIGENCIAS_CARTORIAIS.length}
+          badge={`${DILIGENCIAS_CARTORIAIS.filter((d) => d.status === "Atrasada").length} atrasada(s)`}
+          icone={<FileText strokeWidth={2} />}
+          ativo={secao === "diligencias"}
+          onClick={() => setSecao("diligencias")}
         />
         <Totalizador
-          label="Privilégios Elevados"
-          valor={PRIVILEGIOS_SUSPEITOS.length}
-          badge={`${PRIVILEGIOS_SUSPEITOS.filter((p) => p.risco === "Crítico").length} crítico`}
-          icone={<Shield strokeWidth={2} />}
-          ativo={secao === "privilegios"}
-          onClick={() => setSecao("privilegios")}
+          label="Central de Comunicação"
+          valor={MENSAGENS_COMUNICACAO.length}
+          badge={`${MENSAGENS_COMUNICACAO.filter((m) => m.status === "Em atraso").length} em atraso`}
+          badgeBg={S.orangeLight}
+          badgeColor={S.orange}
+          icone={<Mail strokeWidth={2} />}
+          ativo={secao === "mensagens"}
+          onClick={() => setSecao("mensagens")}
         />
         <Totalizador
-          label="Vistorias Fantasma"
-          valor={VISTORIAS_FANTASMA.length}
-          badge={`até ${maxVistoriaKm} km`}
-          icone={<MapPin strokeWidth={2} />}
-          ativo={secao === "vistorias"}
-          onClick={() => setSecao("vistorias")}
+          label="Assinaturas Pendentes"
+          valor={ASSINATURAS_PENDENTES.length}
+          badge={`${ASSINATURAS_PENDENTES.filter((v) => v.status === "Expirado").length} expiradas`}
+          badgeBg={S.redLight}
+          badgeColor={S.red}
+          icone={<PenTool strokeWidth={2} />}
+          ativo={secao === "assinaturas"}
+          onClick={() => setSecao("assinaturas")}
         />
         <Totalizador
           label="Retificações / Cancelamentos"
@@ -85,9 +85,9 @@ export function DashCompliance() {
         />
       </div>
 
-      {secao === "acessos" && <AcessosSuspeitosSection />}
-      {secao === "privilegios" && <PrivilegiosSection />}
-      {secao === "vistorias" && <VistoriasFantasmaSection />}
+      {secao === "diligencias" && <AcessosSuspeitosSection />}
+      {secao === "mensagens" && <PrivilegiosSection />}
+      {secao === "assinaturas" && <VistoriasFantasmaSection />}
       {secao === "retificacoes" && (
         <>
           <RetificacoesHeatMapPanel />

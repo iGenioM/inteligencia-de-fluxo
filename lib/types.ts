@@ -3,42 +3,60 @@ export type AppMainNavId = "compliance" | "cartorios";
 
 export type RiscoNivel = "Alto" | "Médio" | "Crítico";
 
-export interface AcessoForaHorario {
+export interface DiligenciaCartorial {
   id: string;
-  servidor: string;
-  cargo: string;
-  setor: string;
-  horario: string;
-  data: string;
   processo: string;
-  acao: string;
-  ip: string;
-  risco: "Alto" | "Médio";
-}
-
-export interface PrivilegioSuspeito {
-  id: string;
-  servidor: string;
-  cargo: string;
-  setor: string;
-  privilegioAnterior: string;
-  privilegioNovo: string;
-  elevadoPor: string;
-  dataHora: string;
-  justificativa: string;
-  risco: RiscoNivel;
-}
-
-export interface VistoriaFantasma {
-  id: string;
-  vistoriador: string;
   municipio: string;
+  cartorio: string;
+  tipo:
+    | "Retificação de Matrícula"
+    | "Cancelamento de Registro"
+    | "Alteração de Titular"
+    | "Averbação Suspeita";
+  solicitadoPor: string;
+  dataAbertura: string;
+  dataPrazo: string;
+  status: "Pendente" | "Em andamento" | "Concluída" | "Atrasada";
+  prioridade: "Alta" | "Média" | "Baixa";
+  observacao: string;
+}
+
+export interface MensagemComunicacao {
+  id: string;
+  numero: string;
   processo: string;
-  dataAssinatura: string;
-  coordAssinatura: string;
-  coordImovel: string;
-  distanciaKm: number;
-  status: "Laudo Emitido" | "Em Revisão";
+  municipio: string;
+  cartorio: string;
+  tipoMensagem:
+    | "Legitimidade de título"
+    | "Liberação de condições resolutivas"
+    | "Cancelamento de registro"
+    | "Outros";
+  remetente: string;
+  destinatario: string;
+  dataEnvio: string;
+  prazoResposta: string;
+  status: "Aguardando resposta" | "Finalizada" | "Em atraso";
+  assunto: string;
+}
+
+export interface AssinaturaPendente {
+  id: string;
+  processo: string;
+  municipio: string;
+  documento:
+    | "Laudo de Vistoria"
+    | "Portaria de Titulação"
+    | "Termo de Concessão"
+    | "Auto de Demarcação";
+  responsavel: string;
+  cargo: string;
+  setor: string;
+  dataLimite: string;
+  diasEmAberto: number;
+  tentativasNotificacao: number;
+  status: "Pendente" | "Notificado" | "Recusado" | "Expirado";
+  prioridade: "Alta" | "Média" | "Baixa";
 }
 
 export interface Retificacao {

@@ -1,4 +1,3 @@
-import { MapPin } from "lucide-react";
 import { BtnAcao } from "@/components/ui/BtnAcao";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { Paginacao } from "@/components/ui/Paginacao";
@@ -7,68 +6,72 @@ import { Pill } from "@/components/ui/Pill";
 import { SecTitle } from "@/components/ui/SecTitle";
 import { SubDesc } from "@/components/ui/SubDesc";
 import { Tabela, Td } from "@/components/ui/Tabela";
-import { VISTORIAS_FANTASMA } from "@/lib/data/mock";
+import { ASSINATURAS_PENDENTES } from "@/lib/data/mock";
 import { S } from "@/lib/colors";
 
 export function VistoriasFantasmaSection() {
-  const maxKm = Math.max(...VISTORIAS_FANTASMA.map((v) => v.distanciaKm));
-  const mediaKm = Math.round(
-    VISTORIAS_FANTASMA.reduce((s, v) => s + v.distanciaKm, 0) /
-      VISTORIAS_FANTASMA.length,
-  );
-  const emitidos = VISTORIAS_FANTASMA.filter(
-    (v) => v.status === "Laudo Emitido",
+  const totalPendencias = ASSINATURAS_PENDENTES.length;
+  const expiradas = ASSINATURAS_PENDENTES.filter(
+    (v) => v.status === "Expirado",
   ).length;
+  const notificados = ASSINATURAS_PENDENTES.filter(
+    (v) => v.status === "Notificado",
+  ).length;
+  const mediaDiasAberto = Math.round(
+    ASSINATURAS_PENDENTES.reduce((s, v) => s + v.diasEmAberto, 0) /
+      ASSINATURAS_PENDENTES.length,
+  );
 
   return (
     <PanelCard>
-      <SecTitle icon={MapPin}>
-        Índice de Inconsistência de Vistorias — Vistoria Fantasma
+      <SecTitle>
+        Assinaturas Pendentes — Documentos Aguardando Assinatura Digital
       </SecTitle>
       <SubDesc>
-        Cruzamento entre os dados do Aplicativo Vistoria (assinatura digital com
-        geolocalização) e as coordenadas reais do imóvel aprovadas no processo.
-        Laudos assinados a mais de <strong>50 km</strong> do imóvel são
-        sinalizados automaticamente.
+        Este painel lista todos os documentos gerados pelo SICARF que ainda
+        aguardam assinatura digital dos responsáveis, com controle de prazo e
+        notificações automáticas.
       </SubDesc>
 
       <div className="mb-[18px] flex gap-3">
         <MetricCard
-          value={VISTORIAS_FANTASMA.length}
-          label="Laudos com divergência"
+          value={totalPendencias}
+          label="Total de pendências"
+          valueClassName="text-sicarf-gray-800"
+        />
+        <MetricCard
+          value={expiradas}
+          label="Expiradas"
           valueClassName="text-sicarf-red"
         />
         <MetricCard
-          value={`${maxKm} km`}
-          label="Maior distância detectada"
-          valueClassName="text-sicarf-red"
-        />
-        <MetricCard
-          value={`${mediaKm} km`}
-          label="Média das divergências"
+          value={notificados}
+          label="Notificados"
           valueClassName="text-sicarf-orange"
         />
         <MetricCard
-          value={emitidos}
-          label="Laudos já emitidos"
-          valueClassName="text-sicarf-red"
+          value={`${mediaDiasAberto} dias`}
+          label="Média de dias em aberto"
+          valueClassName="text-sicarf-green"
         />
       </div>
 
       <Tabela
         colunas={[
           "ID",
-          "Vistoriador",
-          "Município",
           "Processo",
-          "Data Assinatura",
-          "Coord. de Assinatura",
-          "Coord. Real do Imóvel",
-          "Distância",
+          "Município",
+          "Documento",
+          "Responsável",
+          "Cargo / Setor",
+          "Data Limite",
+          "Dias em Aberto",
+          "Notificações Enviadas",
           "Status",
+          "Prioridade",
           "Ações",
         ]}
-        linhas={VISTORIAS_FANTASMA}
+        linhas={ASSINATURAS_PENDENTES}
         renderLinha={(r) => (
           <>
             <Td>
@@ -77,41 +80,71 @@ export function VistoriasFantasmaSection() {
               </span>
             </Td>
             <Td>
-              <strong className="text-sicarf-gray-900">{r.vistoriador}</strong>
-            </Td>
-            <Td>{r.municipio}</Td>
-            <Td>
               <span className="font-mono text-xs">{r.processo}</span>
             </Td>
-            <Td className="whitespace-nowrap">{r.dataAssinatura}</Td>
+            <Td>{r.municipio}</Td>
+            <Td>{r.documento}</Td>
+            <Td>{r.responsavel}</Td>
             <Td>
-              <span className="font-mono text-[11px] text-sicarf-gray-500">
-                {r.coordAssinatura}
-              </span>
+              <span className="block text-sicarf-gray-700">{r.cargo}</span>
+              <span className="text-[11px] text-sicarf-gray-400">{r.setor}</span>
             </Td>
-            <Td>
-              <span className="font-mono text-[11px] text-sicarf-gray-500">
-                {r.coordImovel}
-              </span>
+            <Td
+              className={`whitespace-nowrap ${
+                r.status === "Expirado"
+                  ? "font-bold text-sicarf-red"
+                  : "text-sicarf-gray-700"
+              }`}
+            >
+              {r.dataLimite}
             </Td>
             <Td>
               <span
-                className={`text-sm font-bold ${
-                  r.distanciaKm > 200
+                className={`font-bold ${
+                  r.diasEmAberto > 10
                     ? "text-sicarf-red"
-                    : r.distanciaKm > 50
+                    : r.diasEmAberto >= 5
                       ? "text-sicarf-orange"
                       : "text-sicarf-green"
                 }`}
               >
-                {r.distanciaKm} km
+                {r.diasEmAberto}
+              </span>
+            </Td>
+            <Td>
+              <span className="font-mono text-xs text-sicarf-gray-700">
+                {r.tentativasNotificacao}x
               </span>
             </Td>
             <Td>
               <Pill
                 label={r.status}
-                bg={r.status === "Laudo Emitido" ? S.redLight : S.orangeLight}
-                color={r.status === "Laudo Emitido" ? S.red : S.orange}
+                bg={
+                  r.status === "Expirado" || r.status === "Recusado"
+                    ? S.redLight
+                    : r.status === "Notificado"
+                      ? S.orangeLight
+                      : S.gray100
+                }
+                color={
+                  r.status === "Expirado" || r.status === "Recusado"
+                    ? S.red
+                    : r.status === "Notificado"
+                      ? S.orange
+                      : S.gray500
+                }
+              />
+            </Td>
+            <Td>
+              <Pill
+                label={r.prioridade}
+                bg={
+                  r.prioridade === "Alta"
+                    ? S.red
+                    : r.prioridade === "Média"
+                      ? S.orange
+                      : S.green
+                }
               />
             </Td>
             <Td>
@@ -120,7 +153,7 @@ export function VistoriasFantasmaSection() {
           </>
         )}
       />
-      <Paginacao total={VISTORIAS_FANTASMA.length} />
+      <Paginacao total={ASSINATURAS_PENDENTES.length} />
     </PanelCard>
   );
 }

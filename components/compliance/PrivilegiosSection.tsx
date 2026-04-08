@@ -1,88 +1,114 @@
-import { Shield } from "lucide-react";
 import { BtnAcao } from "@/components/ui/BtnAcao";
+import { MetricCard } from "@/components/ui/MetricCard";
 import { Paginacao } from "@/components/ui/Paginacao";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Pill } from "@/components/ui/Pill";
 import { SecTitle } from "@/components/ui/SecTitle";
 import { SubDesc } from "@/components/ui/SubDesc";
 import { Tabela, Td } from "@/components/ui/Tabela";
-import { PRIVILEGIOS_SUSPEITOS } from "@/lib/data/mock";
+import { MENSAGENS_COMUNICACAO } from "@/lib/data/mock";
 import { S } from "@/lib/colors";
 
-function justificativaClasses(j: string): string {
-  const alerta =
-    j.includes("Nenhuma") ||
-    j.includes("verbal") ||
-    j.includes("não autorizada");
-  const bold = j.includes("Nenhuma") || j.includes("verbal");
-  return `${alerta ? "text-sicarf-red" : "text-sicarf-gray-700"} ${bold ? "font-bold" : "font-normal"}`;
-}
-
 export function PrivilegiosSection() {
+  const total = MENSAGENS_COMUNICACAO.length;
+  const aguardando = MENSAGENS_COMUNICACAO.filter(
+    (m) => m.status === "Aguardando resposta",
+  ).length;
+  const emAtraso = MENSAGENS_COMUNICACAO.filter(
+    (m) => m.status === "Em atraso",
+  ).length;
+
   return (
     <PanelCard>
-      <SecTitle icon={Shield}>
-        Elevação Suspeita de Privilégios de Acesso
+      <SecTitle>
+        Central de Comunicação — Mensagens entre Corregedoria e Cartórios
       </SecTitle>
       <SubDesc>
-        Servidores que tiveram perfis de acesso elevados de forma atípica — sem
-        justificativa formal registrada, com autorização via contas genéricas de
-        sistema, ou sem aprovação da gestão competente.
+        Este painel centraliza todas as comunicações formais trocadas entre a
+        Corregedoria e os cartórios do estado, permitindo rastreabilidade
+        completa das tratativas sobre processos de regularização fundiária.
       </SubDesc>
+      <div className="mb-[18px] flex gap-3">
+        <MetricCard
+          value={total}
+          label="Total de mensagens"
+          valueClassName="text-sicarf-gray-800"
+          className="px-3.5 py-2.5"
+          centered={false}
+        />
+        <MetricCard
+          value={aguardando}
+          label="Aguardando resposta"
+          valueClassName="text-sicarf-orange"
+          className="px-3.5 py-2.5"
+          centered={false}
+        />
+        <MetricCard
+          value={emAtraso}
+          label="Em atraso"
+          valueClassName="text-sicarf-red"
+          className="px-3.5 py-2.5"
+          centered={false}
+        />
+      </div>
       <Tabela
         colunas={[
-          "ID",
-          "Servidor",
-          "Cargo / Setor",
-          "Privilégio Anterior",
-          "Novo Privilégio",
-          "Elevado Por",
-          "Data e Hora",
-          "Justificativa",
-          "Risco",
+          "Nº Mensagem",
+          "Processo",
+          "Município",
+          "Cartório",
+          "Tipo de Mensagem",
+          "Remetente",
+          "Destinatário",
+          "Data Envio",
+          "Prazo Resposta",
+          "Status",
           "Ações",
         ]}
-        linhas={PRIVILEGIOS_SUSPEITOS}
+        linhas={MENSAGENS_COMUNICACAO}
         renderLinha={(r) => (
           <>
             <Td>
               <span className="font-mono text-[11px] text-sicarf-gray-500">
-                {r.id}
+                {r.numero}
               </span>
             </Td>
             <Td>
-              <strong className="text-sicarf-gray-900">{r.servidor}</strong>
+              <span className="font-mono text-xs">{r.processo}</span>
             </Td>
+            <Td>{r.municipio}</Td>
+            <Td className="max-w-[220px] text-sicarf-gray-700">{r.cartorio}</Td>
+            <Td>{r.tipoMensagem}</Td>
+            <Td>{r.remetente}</Td>
+            <Td>{r.destinatario}</Td>
+            <Td className="whitespace-nowrap">{r.dataEnvio}</Td>
             <Td>
-              <span className="block text-sicarf-gray-700">{r.cargo}</span>
-              <span className="text-[11px] text-sicarf-gray-400">{r.setor}</span>
-            </Td>
-            <Td>
-              <Pill
-                label={r.privilegioAnterior}
-                bg={S.gray200}
-                color={S.gray700}
-              />
-            </Td>
-            <Td>
-              <Pill label={r.privilegioNovo} bg={S.blueBg} color={S.blue} />
-            </Td>
-            <Td>
-              <span className="font-mono text-[11px] text-sicarf-gray-500">
-                {r.elevadoPor}
+              <span
+                className={`${
+                  r.status === "Em atraso"
+                    ? "font-bold text-sicarf-red"
+                    : "text-sicarf-gray-700"
+                }`}
+              >
+                {r.prazoResposta}
               </span>
             </Td>
-            <Td className="whitespace-nowrap">{r.dataHora}</Td>
-            <Td
-              className={`max-w-[210px] text-xs ${justificativaClasses(r.justificativa)}`}
-            >
-              {r.justificativa}
-            </Td>
             <Td>
               <Pill
-                label={r.risco}
+                label={r.status}
                 bg={
-                  r.risco === "Crítico" || r.risco === "Alto" ? S.red : S.orange
+                  r.status === "Em atraso"
+                    ? S.redLight
+                    : r.status === "Aguardando resposta"
+                      ? S.orangeLight
+                      : S.greenLight
+                }
+                color={
+                  r.status === "Em atraso"
+                    ? S.red
+                    : r.status === "Aguardando resposta"
+                      ? S.orange
+                      : S.green
                 }
               />
             </Td>
@@ -92,7 +118,7 @@ export function PrivilegiosSection() {
           </>
         )}
       />
-      <Paginacao total={PRIVILEGIOS_SUSPEITOS.length} />
+      <Paginacao total={MENSAGENS_COMUNICACAO.length} />
     </PanelCard>
   );
 }
