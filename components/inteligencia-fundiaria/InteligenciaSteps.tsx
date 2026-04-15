@@ -5,13 +5,21 @@ import {
   ArrowUp,
   BarChart3,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   Layers,
   LineChart,
   MapPinned,
   Star,
 } from "lucide-react";
-import { Fragment, useEffect, useId, useMemo, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useInteligenciaDemo } from "@/components/inteligencia-fundiaria/InteligenciaDemoContext";
 import { PainelPerfilBeneficiarios } from "@/components/inteligencia-fundiaria/PainelPerfilBeneficiarios";
 import { FieldLabel } from "@/components/ui/FieldLabel";
@@ -28,15 +36,46 @@ import { S } from "@/lib/colors";
 import type {
   AcompanhamentoTabelaLinha,
   AlertaGargaloDemo,
+  EquipeOperacionalDemo,
   GlebaRow,
+  TipoGlebaDemo,
 } from "@/lib/inteligencia-fundiaria-dados";
 
 function badgeModalidade(m: GlebaRow["modalidade"]) {
-  if (m === "Doação")
-    return <Pill label="Doação" bg={S.blueBg} color={S.blue} />;
-  if (m === "Misto")
-    return <Pill label="Misto" bg="#ede7f6" color="#6a1b9a" />;
-  return <Pill label="Onerosa" bg="#fce4ec" color="#880e4f" />;
+  if (m === "REURB")
+    return <Pill label="REURB" bg={S.greenLight} color={S.greenDark} />;
+  if (m === "RURAL")
+    return <Pill label="Rural" bg={S.blueBg} color={S.blue} />;
+  return <Pill label="Quilombola" bg="#ede7f6" color="#6a1b9a" />;
+}
+
+function diasNoIntervalo(dataInicio: string, dataFim: string): number {
+  const a = new Date(`${dataInicio}T12:00:00`);
+  const b = new Date(`${dataFim}T12:00:00`);
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return 30;
+  const ms = b.getTime() - a.getTime();
+  const dias = Math.floor(ms / 86400000) + 1;
+  return Math.max(1, dias);
+}
+
+/** Duas etiquetas com os percentuais (cronograma vs títulos), sem barras. */
+function TagsRitmoCampanha({
+  pctTempo,
+  pctTitulos,
+}: {
+  pctTempo: number;
+  pctTitulos: number;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      <span className="inline-flex rounded border border-sicarf-gray-200 bg-sicarf-gray-50 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-sicarf-gray-800">
+        Cronograma {pctTempo}%
+      </span>
+      <span className="inline-flex rounded border border-sicarf-gray-200 bg-sicarf-gray-50 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-sicarf-gray-800">
+        Títulos {pctTitulos}%
+      </span>
+    </div>
+  );
 }
 
 function badgeAptidao(a: GlebaRow["aptidao"]) {
@@ -45,33 +84,171 @@ function badgeAptidao(a: GlebaRow["aptidao"]) {
   return <Pill label="Média" bg={S.orangeBg} color={S.orange} />;
 }
 
+/** Select com aparência de campo único; ao abrir, checkboxes permitem várias equipes. */
+function SelectMultiEquipes({
+  id,
+  equipes,
+  selecionados,
+  onChange,
+}: {
+  id: string;
+  equipes: readonly EquipeOperacionalDemo[];
+  selecionados: Set<string>;
+  onChange: (next: Set<string>) => void;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function fechar(ev: MouseEvent) {
+      if (ref.current && !ref.current.contains(ev.target as Node)) {
+        setAberto(false);
+      }
+    }
+    if (aberto) {
+      document.addEventListener("mousedown", fechar);
+      return () => document.removeEventListener("mousedown", fechar);
+    }
+  }, [aberto]);
+
+  const textoResumo = useMemo(() => {
+    if (selecionados.size === 0) return "Selecione as equipes…";
+    const nomes = equipes
+      .filter((e) => selecionados.has(e.id))
+      .map((e) => e.nome);
+    if (nomes.length <= 2) return nomes.join(", ");
+    return `${nomes.length} equipes selecionadas`;
+  }, [equipes, selecionados]);
+
+  function alternar(idEq: string) {
+    const n = new Set(selecionados);
+    if (n.has(idEq)) n.delete(idEq);
+    else n.add(idEq);
+    onChange(n);
+  }
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <button
+        type="button"
+        id={id}
+        aria-expanded={aberto}
+        aria-haspopup="listbox"
+        onClick={() => setAberto((a) => !a)}
+        className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border border-sicarf-gray-200 bg-white px-3 py-2.5 text-left text-sm text-sicarf-gray-800 outline-none transition-[color,box-shadow,border-color] focus:border-sicarf-green focus:ring-1 focus:ring-sicarf-green/25"
+      >
+        <span className="min-w-0 flex-1 truncate">{textoResumo}</span>
+        <ChevronDown
+          className={`size-4 shrink-0 text-sicarf-gray-400 transition-transform ${aberto ? "rotate-180" : ""}`}
+          aria-hidden
+          strokeWidth={2}
+        />
+      </button>
+      {aberto ? (
+        <ul
+          role="listbox"
+          aria-multiselectable
+          className="absolute left-0 right-0 z-30 mt-1 max-h-52 overflow-y-auto rounded-lg border border-sicarf-gray-200 bg-white py-1 shadow-lg"
+        >
+          {equipes.map((e) => {
+            const marcado = selecionados.has(e.id);
+            return (
+              <li key={e.id} role="option" aria-selected={marcado}>
+                <label className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-sicarf-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={marcado}
+                    onChange={() => alternar(e.id)}
+                    className="accent-sicarf-green"
+                  />
+                  <span className="min-w-0 flex-1">{e.nome}</span>
+                  <span className="shrink-0 tabular-nums text-xs text-sicarf-gray-500">
+                    {e.processosPorDia.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    proc./dia
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 export function StepParametros() {
-  const { dados } = useInteligenciaDemo();
+  const { dados, previsaoTitulos, setPrevisaoTitulos } = useInteligenciaDemo();
   const idRegiao = useId();
   const idMunicipio = useId();
-  const idGleba = useId();
+  const idTipoGleba = useId();
+  const idGlebaNome = useId();
   const idAreaMax = useId();
   const idFiltroAmbiental = useId();
-  const idTecnicos = useId();
-  const idDias = useId();
+  const idDataInicio = useId();
+  const idDataFim = useId();
   const idProcDia = useId();
-  const idEmater = useId();
-  const [tecnicos, setTecnicos] = useState(8);
-  const [dias, setDias] = useState(30);
-  const [procDia, setProcDia] = useState(4);
-  const [emater, setEmater] = useState(1.2);
-  const [logistica, setLogistica] = useState(80);
+  const idPrevisaoTitulos = useId();
+  const idProcessoColetivo = useId();
+  const idEquipes = useId();
+
+  const [tipoGleba, setTipoGleba] = useState<TipoGlebaDemo>("estadual");
+  const [glebaNome, setGlebaNome] = useState(
+    () => dados.glebasPorTipoGleba.estadual[0] ?? "",
+  );
+  const [processoColetivo, setProcessoColetivo] = useState("");
+  const [equipesSel, setEquipesSel] = useState<Set<string>>(() => {
+    const s = new Set<string>();
+    dados.equipesOperacionais.forEach((e) => s.add(e.id));
+    return s;
+  });
+  const [dataInicio, setDataInicio] = useState("2026-05-01");
+  const [dataFim, setDataFim] = useState("2026-05-30");
+
+  useEffect(() => {
+    const opcoes = dados.glebasPorTipoGleba[tipoGleba];
+    if (!opcoes.length) return;
+    setGlebaNome((prev) => (opcoes.includes(prev) ? prev : opcoes[0]));
+  }, [tipoGleba, dados.glebasPorTipoGleba, dados.estadoId]);
+
+  useEffect(() => {
+    const s = new Set<string>();
+    dados.equipesOperacionais.forEach((e) => s.add(e.id));
+    setEquipesSel(s);
+  }, [dados.equipesOperacionais, dados.estadoId]);
+
+  useEffect(() => {
+    setProcessoColetivo((p) =>
+      !p || dados.processosColetivosOpcoes.includes(p) ? p : "",
+    );
+  }, [dados.processosColetivosOpcoes, dados.estadoId]);
+
+  const dias = useMemo(
+    () => diasNoIntervalo(dataInicio, dataFim),
+    [dataInicio, dataFim],
+  );
+
+  const processosPorDiaAgregado = useMemo(() => {
+    let t = 0;
+    dados.equipesOperacionais.forEach((e) => {
+      if (equipesSel.has(e.id)) t += e.processosPorDia;
+    });
+    return t;
+  }, [dados.equipesOperacionais, equipesSel]);
 
   const titulosCalculados = useMemo(
-    () =>
-      Math.round(tecnicos * dias * procDia * emater * (logistica / 100)),
-    [tecnicos, dias, procDia, emater, logistica],
+    () => Math.round(dias * processosPorDiaAgregado),
+    [dias, processosPorDiaAgregado],
   );
 
   const titulosKpi =
     dados.kpiTitulosExibicao != null
       ? dados.kpiTitulosExibicao
       : titulosCalculados;
+
+  const opcoesGlebaAtual = dados.glebasPorTipoGleba[tipoGleba];
 
   return (
     <div className="space-y-4">
@@ -80,7 +257,7 @@ export function StepParametros() {
       </SecTitle>
       <SubDesc>
         Configure os parâmetros da campanha para gerar projeções de títulos,
-        custos e aptidão territorial.
+        custos e aptidão territorial (REURB).
       </SubDesc>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_minmax(260px,320px)]">
@@ -118,16 +295,52 @@ export function StepParametros() {
                 </FormSelect>
               </div>
               <div>
-                <FieldLabel htmlFor={idGleba}>
-                  Gleba estadual (opcional)
+                <FieldLabel htmlFor={idTipoGleba} obrigatorio>
+                  Tipo de gleba
                 </FieldLabel>
                 <FormSelect
-                  id={idGleba}
-                  defaultValue={dados.glebasEstadualOpcoes[0]}
+                  id={idTipoGleba}
+                  value={tipoGleba}
+                  onChange={(e) =>
+                    setTipoGleba(e.target.value as TipoGlebaDemo)
+                  }
                 >
-                  {dados.glebasEstadualOpcoes.map((g) => (
+                  <option value="municipal">Municipal</option>
+                  <option value="estadual">Estadual</option>
+                  <option value="federal">Federal</option>
+                </FormSelect>
+              </div>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-1">
+                <FieldLabel htmlFor={idGlebaNome} obrigatorio>
+                  Selecione a gleba
+                </FieldLabel>
+                <FormSelect
+                  id={idGlebaNome}
+                  value={glebaNome}
+                  onChange={(e) => setGlebaNome(e.target.value)}
+                >
+                  {opcoesGlebaAtual.map((g) => (
                     <option key={g} value={g}>
                       {g}
+                    </option>
+                  ))}
+                </FormSelect>
+              </div>
+              <div className="sm:col-span-1">
+                <FieldLabel htmlFor={idProcessoColetivo}>
+                  Processos coletivos (opcional)
+                </FieldLabel>
+                <FormSelect
+                  id={idProcessoColetivo}
+                  value={processoColetivo}
+                  onChange={(e) => setProcessoColetivo(e.target.value)}
+                >
+                  <option value="">Nenhum</option>
+                  {dados.processosColetivosOpcoes.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
                     </option>
                   ))}
                 </FormSelect>
@@ -140,20 +353,20 @@ export function StepParametros() {
               2. Perfil do beneficiário e modalidade
             </div>
             <div className="flex flex-wrap gap-2">
-              {["Doação (não onerosa)", "Compra (onerosa)", "PEAS"].map(
-                (t, i) => (
-                  <span
-                    key={t}
-                    className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                      i < 2
-                        ? "border-sicarf-green-dark bg-sicarf-green-light text-sicarf-green-dark"
-                        : "border-sicarf-gray-200 bg-sicarf-gray-50 text-sicarf-gray-500"
-                    }`}
-                  >
-                    {t}
-                  </span>
-                ),
-              )}
+              {(["REURB", "RURAL", "Quilombola"] as const).map((t, i) => (
+                <span
+                  key={t}
+                  className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                    i === 0
+                      ? "border-sicarf-green-dark bg-sicarf-green-light text-sicarf-green-dark"
+                      : i === 1
+                        ? "border-sicarf-blue bg-sicarf-blue/10 text-sicarf-blue"
+                        : "border-sicarf-gray-200 bg-sicarf-gray-50 text-sicarf-gray-700"
+                  }`}
+                >
+                  {t}
+                </span>
+              ))}
             </div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
@@ -184,67 +397,79 @@ export function StepParametros() {
             <div className="mb-3 text-xs font-bold uppercase tracking-wide text-sicarf-gray-500">
               3. Capacidade operacional da equipe
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3">
               <div>
-                <FieldLabel htmlFor={idTecnicos} obrigatorio>
-                  Técnicos disponíveis
-                </FieldLabel>
-                <FormTextInput
-                  id={idTecnicos}
-                  type="number"
-                  value={tecnicos}
-                  onChange={(e) => setTecnicos(Number(e.target.value) || 0)}
-                />
-              </div>
-              <div>
-                <FieldLabel htmlFor={idDias} obrigatorio>
-                  Duração (dias)
-                </FieldLabel>
-                <FormTextInput
-                  id={idDias}
-                  type="number"
-                  value={dias}
-                  onChange={(e) => setDias(Number(e.target.value) || 0)}
-                />
-              </div>
-              <div>
-                <FieldLabel htmlFor={idProcDia} obrigatorio>
-                  Processos/técnico/dia
-                </FieldLabel>
-                <FormTextInput
-                  id={idProcDia}
-                  type="number"
-                  value={procDia}
-                  onChange={(e) => setProcDia(Number(e.target.value) || 0)}
-                />
-              </div>
-              <div>
-                <FieldLabel htmlFor={idEmater} obrigatorio>
-                  EMATER disponível
-                </FieldLabel>
-                <FormSelect
-                  id={idEmater}
-                  value={String(emater)}
-                  onChange={(e) => setEmater(Number(e.target.value))}
+                <label
+                  htmlFor={idEquipes}
+                  className="mb-1.5 block text-xs font-semibold text-sicarf-gray-700"
                 >
-                  <option value="1.2">Sim — coberto</option>
-                  <option value="1">Não disponível</option>
-                </FormSelect>
+                  Equipes
+                </label>
+                <SelectMultiEquipes
+                  id={idEquipes}
+                  equipes={dados.equipesOperacionais}
+                  selecionados={equipesSel}
+                  onChange={setEquipesSel}
+                />
               </div>
-            </div>
-            <div className="mt-3">
-              <label className="text-xs text-sicarf-gray-500">
-                Eficiência logística:{" "}
-                <strong className="text-sicarf-green">{logistica}%</strong>
-              </label>
-              <input
-                type="range"
-                min={60}
-                max={100}
-                value={logistica}
-                onChange={(e) => setLogistica(Number(e.target.value))}
-                className="mt-1 w-full accent-sicarf-green"
-              />
+              <div className="gap-3 flex">
+                <div>
+                  <FieldLabel htmlFor={idDataInicio} obrigatorio>
+                    Data inicial
+                  </FieldLabel>
+                  <FormTextInput
+                    id={idDataInicio}
+                    type="date"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor={idDataFim} obrigatorio>
+                    Data final
+                  </FieldLabel>
+                  <FormTextInput
+                    id={idDataFim}
+                    type="date"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <FieldLabel htmlFor={idProcDia}>
+                    Processos/dia (equipes selecionadas)
+                  </FieldLabel>
+                  <FormTextInput
+                    id={idProcDia}
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly
+                    className="bg-sicarf-gray-50"
+                    value={
+                      processosPorDiaAgregado > 0
+                        ? processosPorDiaAgregado.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : "—"
+                    }
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <FieldLabel htmlFor={idPrevisaoTitulos} obrigatorio>
+                    Previsão de títulos
+                  </FieldLabel>
+                  <FormTextInput
+                    id={idPrevisaoTitulos}
+                    type="number"
+                    min={0}
+                    value={previsaoTitulos}
+                    onChange={(e) =>
+                      setPrevisaoTitulos(Number(e.target.value) || 0)
+                    }
+                  />
+                </div>
+              </div>
             </div>
           </PanelCard>
 
@@ -257,16 +482,16 @@ export function StepParametros() {
               label="Títulos projetados"
             />
             <MetricCard
+              value={previsaoTitulos}
+              label="Previsão de títulos"
+            />
+            <MetricCard
               value={dados.areaRegularizavelHa}
               label="Área regularizável (ha)"
             />
             <MetricCard
               value={dados.custoEstTitulo}
               label="Custo est. por título"
-            />
-            <MetricCard
-              value={dados.scoreSaf}
-              label="Score SAF"
             />
           </div>
 
@@ -319,35 +544,6 @@ export function StepParametros() {
         </div>
 
         <div className="space-y-4">
-          <PanelCard>
-            <div className="mb-3 text-xs font-bold uppercase tracking-wide text-sicarf-gray-500">
-              Composição do SAF
-            </div>
-            {[
-              ["CAR ativo no município", 91],
-              ["Glebas disponíveis", 78],
-              ["Uso do solo favorável", 85],
-              ["EMATER presente", 100],
-            ].map(([nome, pct]) => (
-              <div key={String(nome)} className="mb-2 flex items-center gap-2">
-                <span className="min-w-[140px] text-[11px] text-sicarf-gray-600">
-                  {nome}
-                </span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-sicarf-gray-200">
-                  <div
-                    className="h-full rounded-full bg-sicarf-green"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className="w-8 text-right text-[11px] font-bold">
-                  {pct}%
-                </span>
-              </div>
-            ))}
-            <div className="mt-3 rounded bg-sicarf-green-light px-3 py-2 text-center text-xs font-bold text-sicarf-green-dark">
-              {dados.scoreSafResumo}
-            </div>
-          </PanelCard>
           <PainelPerfilBeneficiarios
             total={dados.perfilBeneficiariosTotal}
             fatias={dados.perfilBeneficiariosFatias}
@@ -409,7 +605,7 @@ function IndicadorTendencia({
 }
 
 export function StepProjecao() {
-  const { dados } = useInteligenciaDemo();
+  const { dados, previsaoTitulos } = useInteligenciaDemo();
   const [perfilCronograma, setPerfilCronograma] = useState<
     "otimista" | "realista" | "conservador"
   >("otimista");
@@ -472,7 +668,7 @@ export function StepProjecao() {
         por modalidade conforme os parâmetros da campanha.
       </SubDesc>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <MetricCard
           value={
             <span className="inline-flex items-center justify-center gap-1">
@@ -480,6 +676,14 @@ export function StepProjecao() {
             </span>
           }
           label="Títulos projetados"
+        />
+        <MetricCard
+          value={
+            <span className="inline-flex items-center justify-center gap-1">
+              {previsaoTitulos}
+            </span>
+          }
+          label="Previsão de títulos"
         />
         <MetricCard
           value={
@@ -695,12 +899,12 @@ export function StepProjecao() {
                   stroke="#1a9e6e"
                   strokeWidth="10"
                   strokeLinecap="round"
-                  strokeDasharray={`${(Number(dados.scoreSaf) / 100) * 151} 151`}
+                  strokeDasharray={`${(Number(dados.indiceViabilidadeReurb) / 100) * 151} 151`}
                 />
               </svg>
               <div className="-mt-6 text-center">
                 <div className="text-3xl font-bold text-sicarf-gray-800">
-                  {dados.scoreSaf}
+                  {dados.indiceViabilidadeReurb}
                 </div>
                 <div className="mt-2">
                   <Pill
@@ -1151,12 +1355,14 @@ function estiloAlertaGargalo(nivel: AlertaGargaloDemo["nivel"]) {
 export function StepAcompanhamento() {
   const { dados } = useInteligenciaDemo();
   const idBuscaMunicipio = useId();
-  const [campanhaExpandida, setCampanhaExpandida] = useState(true);
+  const [expandidaChave, setExpandidaChave] = useState<string>("principal");
+
+  const totalCampanhasAtivas = 1 + dados.outrasCampanhas.length;
 
   const kpisAcompanhamento = [
     {
       label: "Campanhas ativas",
-      valor: "9",
+      valor: String(totalCampanhasAtivas),
     },
     {
       label: "Processos abertos",
@@ -1240,6 +1446,87 @@ export function StepAcompanhamento() {
     );
   }
 
+  function DetalheCampanhaReurb() {
+    return (
+      <div className="mt-4 space-y-4 border-t border-sicarf-gray-200 pt-4">
+        <TabelaAcompanhamento
+          titulo="Processos REURB em andamento"
+          tituloClass="bg-sicarf-green-border"
+          colunas={dados.acompColunasRural}
+          linhas={dados.acompLinhasRural}
+        />
+        <TabelaAcompanhamento
+          titulo="Títulos emitidos — REURB"
+          tituloClass="bg-sicarf-green-dark"
+          colunas={dados.acompColunasFinalizados}
+          linhas={dados.acompLinhasFinalizados}
+        />
+
+        <div>
+          <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-sicarf-gray-500">
+            Alertas de gargalo e ações recomendadas
+          </div>
+          <ul className="space-y-2">
+            {dados.alertasGargalo.map((a) => (
+              <li
+                key={a.texto}
+                className={`flex items-center justify-between gap-2 rounded border border-sicarf-gray-200 border-l-4 px-3 py-2 text-[11px] ${estiloAlertaGargalo(a.nivel)}`}
+              >
+                <span className="font-medium">{a.texto}</span>
+                <span className="shrink-0 font-bold tabular-nums">
+                  {a.valor}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sicarf-gray-200 pt-3 text-[11px]">
+          <div className="flex flex-wrap gap-4 text-sicarf-gray-600">
+            <span>
+              <strong className="text-sicarf-gray-900">
+                Total em curso (REURB)
+              </strong>{" "}
+              {dados.acompRodapeTotalCurso}
+            </span>
+            <span>
+              <strong className="text-sicarf-gray-900">
+                Títulos emitidos (REURB)
+              </strong>{" "}
+              {dados.acompRodapeTitulosEmitidos}
+            </span>
+            <span>
+              <strong className="text-sicarf-gray-900">
+                Dias restantes
+              </strong>{" "}
+              {dados.acompRodapeDiasRestantes}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded border border-sicarf-gray-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-sicarf-gray-700 hover:bg-sicarf-gray-50"
+            >
+              Exportar relatório
+            </button>
+            <button
+              type="button"
+              className="rounded border border-sicarf-gray-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-sicarf-gray-700 hover:bg-sicarf-gray-50"
+            >
+              Redistribuir processos
+            </button>
+            <button
+              type="button"
+              className="rounded bg-sicarf-green px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-sicarf-green-dark"
+            >
+              Acionar análise em lote
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <SecTitle icon={MapPinned}>
@@ -1275,9 +1562,8 @@ export function StepAcompanhamento() {
             defaultValue={dados.acompanhamentoTipoFiltroPadrao}
             aria-label="Tipo de processo"
           >
-            <option value="todos">Todos</option>
-            <option value="rural">Rural</option>
             <option value="reurb">REURB</option>
+            <option value="todos">Todos (visão REURB)</option>
           </FormSelect>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1336,7 +1622,11 @@ export function StepAcompanhamento() {
           <PanelCard>
             <button
               type="button"
-              onClick={() => setCampanhaExpandida((e) => !e)}
+              onClick={() =>
+                setExpandidaChave((k) =>
+                  k === "principal" ? "" : "principal",
+                )
+              }
               className="flex w-full flex-col gap-2 text-left"
             >
               <div className="flex flex-wrap items-center gap-2">
@@ -1352,122 +1642,39 @@ export function StepAcompanhamento() {
               <p className="text-[11px] text-sicarf-gray-600">
                 {dados.campanhaAcompMeta}
               </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="h-2.5 min-w-[140px] flex-1 overflow-hidden rounded-full bg-sicarf-gray-200">
-                  <div
-                    className="h-full rounded-full bg-sicarf-green"
-                    style={{ width: "72%" }}
-                  />
-                </div>
-                <span className="text-xs font-bold text-sicarf-green-dark">
-                  72%
-                </span>
-              </div>
+              <TagsRitmoCampanha
+                pctTempo={dados.campanhaAcompPctTempo}
+                pctTitulos={dados.campanhaAcompPctTitulos}
+              />
             </button>
 
-            {campanhaExpandida ? (
-              <div className="mt-4 space-y-4 border-t border-sicarf-gray-200 pt-4">
-                <TabelaAcompanhamento
-                  titulo="Processos de regularização fundiária rural — em andamento"
-                  tituloClass="bg-sicarf-green-border"
-                  colunas={dados.acompColunasRural}
-                  linhas={dados.acompLinhasRural}
-                />
-                <TabelaAcompanhamento
-                  titulo="Processos finalizados — títulos emitidos"
-                  tituloClass="bg-sicarf-green-dark"
-                  colunas={dados.acompColunasFinalizados}
-                  linhas={dados.acompLinhasFinalizados}
-                />
-                <TabelaAcompanhamento
-                  titulo="Processos de regularização fundiária — REURB"
-                  tituloClass="bg-sicarf-green"
-                  colunas={dados.acompColunasReurb}
-                  linhas={dados.acompLinhasReurb}
-                />
-
-                <div>
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-sicarf-gray-500">
-                    Alertas de gargalo e ações recomendadas
-                  </div>
-                  <ul className="space-y-2">
-                    {dados.alertasGargalo.map((a) => (
-                      <li
-                        key={a.texto}
-                        className={`flex items-center justify-between gap-2 rounded border border-sicarf-gray-200 border-l-4 px-3 py-2 text-[11px] ${estiloAlertaGargalo(a.nivel)}`}
-                      >
-                        <span className="font-medium">{a.texto}</span>
-                        <span className="shrink-0 font-bold tabular-nums">
-                          {a.valor}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sicarf-gray-200 pt-3 text-[11px]">
-                  <div className="flex flex-wrap gap-4 text-sicarf-gray-600">
-                    <span>
-                      <strong className="text-sicarf-gray-900">
-                        Total em curso
-                      </strong>{" "}
-                      {dados.acompRodapeTotalCurso}
-                    </span>
-                    <span>
-                      <strong className="text-sicarf-gray-900">
-                        Títulos emitidos
-                      </strong>{" "}
-                      {dados.acompRodapeTitulosEmitidos}
-                    </span>
-                    <span>
-                      <strong className="text-sicarf-gray-900">
-                        Dias restantes
-                      </strong>{" "}
-                      {dados.acompRodapeDiasRestantes}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="rounded border border-sicarf-gray-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-sicarf-gray-700 hover:bg-sicarf-gray-50"
-                    >
-                      Exportar relatório
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded border border-sicarf-gray-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-sicarf-gray-700 hover:bg-sicarf-gray-50"
-                    >
-                      Redistribuir processos
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded bg-sicarf-green px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-sicarf-green-dark"
-                    >
-                      Acionar análise em lote
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            {expandidaChave === "principal" ? <DetalheCampanhaReurb /> : null}
           </PanelCard>
 
           <div className="space-y-2">
             {dados.outrasCampanhas.map((o) => (
               <PanelCard key={o.titulo}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm font-bold text-sicarf-gray-800">
-                    {o.titulo}
-                  </span>
-                  <span className="text-[11px] text-sicarf-gray-600">
-                    {o.resumo}
-                  </span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-sicarf-gray-200">
-                  <div
-                    className="h-full rounded-full bg-sicarf-green"
-                    style={{ width: `${o.progressoPct}%` }}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandidaChave((k) => (k === o.titulo ? "" : o.titulo))
+                  }
+                  className="w-full text-left"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-sicarf-gray-800">
+                      {o.titulo}
+                    </span>
+                    <span className="text-[11px] text-sicarf-gray-600">
+                      {o.resumo}
+                    </span>
+                  </div>
+                  <TagsRitmoCampanha
+                    pctTempo={o.pctTempo}
+                    pctTitulos={o.pctTitulos}
                   />
-                </div>
+                </button>
+                {expandidaChave === o.titulo ? <DetalheCampanhaReurb /> : null}
               </PanelCard>
             ))}
           </div>
@@ -1563,7 +1770,7 @@ export function StepAcompanhamento() {
 }
 
 export function StepExportar() {
-  const { dados } = useInteligenciaDemo();
+  const { dados, previsaoTitulos } = useInteligenciaDemo();
   const idNomePlano = useId();
   const idCenario = useId();
   const idJustificativa = useId();
@@ -1700,8 +1907,8 @@ export function StepExportar() {
               <span className="font-semibold">{dados.docCustoTitulo}</span>
             </div>
             <div className="flex justify-between py-0.5">
-              <span className="text-sicarf-gray-500">SAF</span>
-              <span className="font-semibold">{dados.docSaf}</span>
+              <span className="text-sicarf-gray-500">Previsão de títulos</span>
+              <span className="font-semibold">{previsaoTitulos}</span>
             </div>
           </div>
           <div>

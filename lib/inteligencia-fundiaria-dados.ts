@@ -7,14 +7,26 @@ export type EstadoDemoId = "PA" | "MA";
 /** Estado regional vindo do login (`sicarf_regiao_demo`) e espelhado em `window.estadoAtivo`. */
 export type EstadoAtivoGlobal = EstadoDemoId | "INVALID" | null;
 
+/** Modalidades de campanha na demonstração (três eixos distintos). */
+export type ModalidadeGlebaDemo = "REURB" | "RURAL" | "Quilombola";
+
+export type TipoGlebaDemo = "municipal" | "estadual" | "federal";
+
 export interface GlebaRow {
   gleba: string;
   municipio: string;
   area: string;
   ocupacoes: string;
-  modalidade: "Doação" | "Misto" | "Onerosa";
+  modalidade: ModalidadeGlebaDemo;
   restricoes: string;
   aptidao: "Alta" | "Média";
+}
+
+/** Equipe de campo para multiselect e cálculo de processos/dia (demo). */
+export interface EquipeOperacionalDemo {
+  id: string;
+  nome: string;
+  processosPorDia: number;
 }
 
 /** Fatia do gráfico “Perfil dos beneficiários” (demo). */
@@ -94,8 +106,13 @@ export interface HistoricoCampanhaDemo {
 
 export interface OutraCampanhaResumoDemo {
   titulo: string;
+  /** Mantido para compatibilidade visual; preferir pctTempo e pctTitulos */
   progressoPct: number;
   resumo: string;
+  /** Percentual do prazo da campanha já decorrido */
+  pctTempo: number;
+  /** Percentual dos títulos previstos já emitidos */
+  pctTitulos: number;
 }
 
 export interface DadosDemonstracao {
@@ -106,7 +123,14 @@ export interface DadosDemonstracao {
   orgNome: string;
   regioesSelect: string[];
   municipiosSelect: string[];
-  glebasEstadualOpcoes: string[];
+  /** Glebas por esfera, para o fluxo Tipo de gleba → Selecione a gleba */
+  glebasPorTipoGleba: Record<TipoGlebaDemo, string[]>;
+  /** Processos coletivos disponíveis para select opcional (demo) */
+  processosColetivosOpcoes: string[];
+  /** Equipes para multiselect em capacidade operacional */
+  equipesOperacionais: readonly EquipeOperacionalDemo[];
+  /** Valor inicial do campo “Previsão de títulos” (compartilhado entre etapas via contexto) */
+  previsaoTitulosPadrao: number;
   /** KPI fixo “títulos projetados” na grade (aba Parâmetros), quando não usar só o cálculo */
   kpiTitulosExibicao: number | null;
   areaRegularizavelHa: string;
@@ -114,8 +138,8 @@ export interface DadosDemonstracao {
   custoTotalEstimado: string;
   areaTituladaProjHa: string;
   tempoMedioProcesso: string;
-  scoreSaf: string;
-  scoreSafResumo: string;
+  /** Índice 0–100 para o velocímetro de viabilidade na projeção (substitui SAF) */
+  indiceViabilidadeReurb: string;
   ocupacoesIdentificadas: string;
   funilElegiveis: string;
   funilCarAtivo: string;
@@ -149,7 +173,6 @@ export interface DadosDemonstracao {
   docTitulosProj: string;
   docAreaReg: string;
   docCustoTitulo: string;
-  docSaf: string;
   docGlebas: GlebaRow[];
   perfilBeneficiariosTotal: string;
   perfilBeneficiariosFatias: readonly PerfilBeneficiarioFatia[];
@@ -166,6 +189,9 @@ export interface DadosDemonstracao {
   textoRecomendacaoComparacao: string;
   /** Acompanhamento — metadados da campanha em destaque */
   campanhaAcompMeta: string;
+  /** Percentuais para comparar ritmo temporal vs emissão de títulos (campanha principal) */
+  campanhaAcompPctTempo: number;
+  campanhaAcompPctTitulos: number;
   acompanhamentoTipoFiltroPadrao: string;
   acompColunasRural: readonly string[];
   acompLinhasRural: readonly AcompanhamentoTabelaLinha[];
@@ -188,7 +214,7 @@ const GLEBAS_PA: GlebaRow[] = [
     municipio: "São Félix do Xingu",
     area: "23.450",
     ocupacoes: "142",
-    modalidade: "Doação",
+    modalidade: "REURB",
     restricoes: "Nenhuma crítica",
     aptidao: "Alta",
   },
@@ -197,7 +223,7 @@ const GLEBAS_PA: GlebaRow[] = [
     municipio: "São Félix do Xingu",
     area: "18.920",
     ocupacoes: "98",
-    modalidade: "Misto",
+    modalidade: "RURAL",
     restricoes: "Passivo ambiental parcial",
     aptidao: "Média",
   },
@@ -206,7 +232,7 @@ const GLEBAS_PA: GlebaRow[] = [
     municipio: "São Félix do Xingu",
     area: "31.200",
     ocupacoes: "67",
-    modalidade: "Onerosa",
+    modalidade: "Quilombola",
     restricoes: "Conflito em 3 lotes",
     aptidao: "Média",
   },
@@ -215,7 +241,7 @@ const GLEBAS_PA: GlebaRow[] = [
     municipio: "São Félix do Xingu",
     area: "10.730",
     ocupacoes: "38",
-    modalidade: "Doação",
+    modalidade: "REURB",
     restricoes: "Nenhuma crítica",
     aptidao: "Alta",
   },
@@ -227,7 +253,7 @@ const GLEBAS_MA: GlebaRow[] = [
     municipio: "Imperatriz",
     area: "21.200",
     ocupacoes: "128",
-    modalidade: "Doação",
+    modalidade: "REURB",
     restricoes: "Nenhuma crítica",
     aptidao: "Alta",
   },
@@ -236,7 +262,7 @@ const GLEBAS_MA: GlebaRow[] = [
     municipio: "Imperatriz",
     area: "17.100",
     ocupacoes: "89",
-    modalidade: "Misto",
+    modalidade: "RURAL",
     restricoes: "Passivo ambiental parcial",
     aptidao: "Média",
   },
@@ -245,7 +271,7 @@ const GLEBAS_MA: GlebaRow[] = [
     municipio: "Imperatriz",
     area: "28.400",
     ocupacoes: "61",
-    modalidade: "Onerosa",
+    modalidade: "Quilombola",
     restricoes: "Conflito em 3 lotes",
     aptidao: "Média",
   },
@@ -254,7 +280,7 @@ const GLEBAS_MA: GlebaRow[] = [
     municipio: "Imperatriz",
     area: "9.800",
     ocupacoes: "34",
-    modalidade: "Doação",
+    modalidade: "REURB",
     restricoes: "Nenhuma crítica",
     aptidao: "Alta",
   },
@@ -267,19 +293,40 @@ export const DADOS_PA: DadosDemonstracao = {
   orgNome: "Instituto de Terras do Pará",
   regioesSelect: ["Sudeste Paraense", "Nordeste Paraense", "Baixo Amazonas"],
   municipiosSelect: ["São Félix do Xingu", "Marabá", "Santarém", "Altamira"],
-  glebasEstadualOpcoes: [
-    "Todas as glebas disponíveis",
-    "Gleba Manguari",
-    "Gleba Rio Fresco",
+  glebasPorTipoGleba: {
+    municipal: [
+      "Gleba Manguari",
+      "Gleba Rio Fresco",
+      "Gleba Curuá Norte",
+    ],
+    estadual: [
+      "GLEBA PA-EST-01 — Sudeste Paraense",
+      "GLEBA PA-EST-02 — Baixo Amazonas",
+    ],
+    federal: [
+      "GLEBA federal — Projeto de assentamento Xingu",
+      "GLEBA federal — eixo BR-230",
+    ],
+  },
+  processosColetivosOpcoes: [
+    "PC 001/2025 — REURB São Félix (coletivo)",
+    "PC 002/2025 — Núcleo Rio Fresco",
+    "PC 003/2024 — Regularização quilombola regional",
   ],
+  equipesOperacionais: [
+    { id: "eq-norte", nome: "Equipe Norte", processosPorDia: 1.25 },
+    { id: "eq-sul", nome: "Equipe Sul", processosPorDia: 1.1 },
+    { id: "eq-leste", nome: "Equipe Leste", processosPorDia: 1.4 },
+    { id: "eq-oeste", nome: "Equipe Oeste", processosPorDia: 1.0 },
+  ],
+  previsaoTitulosPadrao: 320,
   kpiTitulosExibicao: null,
   areaRegularizavelHa: "84.300",
   custoEstTitulo: "R$ 412",
   custoTotalEstimado: "R$ 127k",
   areaTituladaProjHa: "51.400",
   tempoMedioProcesso: "23 dias",
-  scoreSaf: "82",
-  scoreSafResumo: "SAF: 82/100 — Alta aptidão",
+  indiceViabilidadeReurb: "88",
   ocupacoesIdentificadas: "345",
   funilElegiveis: "303",
   funilCarAtivo: "272",
@@ -304,7 +351,7 @@ export const DADOS_PA: DadosDemonstracao = {
   kpiTitulosEmitidosGeral: "1.262",
   nomePlanoDefault: "Campanha São Félix do Xingu — Maio 2026",
   justificativaExport:
-    "Campanha focada na Gleba Manguari e glebas adjacentes de São Félix do Xingu, com elevado SAF e presença da EMATER. Objetivo: consolidar metas junto ao ITERPA.",
+    "Campanha focada na Gleba Manguari e glebas adjacentes de São Félix do Xingu, com REURB rural e núcleos quilombolas priorizados e apoio da EMATER. Objetivo: consolidar metas junto ao ITERPA.",
   docUfOrgao: "ESTADO DO PARÁ — ITERPA",
   docTituloPlano: "Plano de Campanha Fundiária",
   docCampanha: "São Félix do Xingu",
@@ -312,13 +359,12 @@ export const DADOS_PA: DadosDemonstracao = {
   docTitulosProj: "307",
   docAreaReg: "84.300 ha",
   docCustoTitulo: "R$ 412",
-  docSaf: "82 / 100",
   docGlebas: GLEBAS_PA,
   perfilBeneficiariosTotal: "345",
   perfilBeneficiariosFatias: [
-    { rotulo: "Agricultura familiar / Doação", pct: 63 },
-    { rotulo: "Onerosa (compra)", pct: 25 },
-    { rotulo: "Assentamento / PEAS", pct: 12 },
+    { rotulo: "REURB", pct: 45 },
+    { rotulo: "Rural", pct: 35 },
+    { rotulo: "Quilombola", pct: 20 },
   ],
   cronogramaSemanas: [
     {
@@ -359,30 +405,30 @@ export const DADOS_PA: DadosDemonstracao = {
   ],
   projecaoModalidades: [
     {
-      modalidade: "Doação (não onerosa)",
-      processos: "154",
-      areaHa: "24.800",
-      custoMedio: "R$ 230",
-      pctTotal: "63%",
-      conversaoPct: 94,
+      modalidade: "REURB",
+      processos: "118",
+      areaHa: "31.200",
+      custoMedio: "R$ 398",
+      pctTotal: "42%",
+      conversaoPct: 91,
       barClass: "bg-sicarf-green",
     },
     {
-      modalidade: "Compra (onerosa)",
-      processos: "76",
-      areaHa: "13.400",
-      custoMedio: "R$ 620",
-      pctTotal: "25%",
-      conversaoPct: 82,
+      modalidade: "Rural",
+      processos: "96",
+      areaHa: "26.100",
+      custoMedio: "R$ 372",
+      pctTotal: "35%",
+      conversaoPct: 87,
       barClass: "bg-sicarf-blue",
     },
     {
-      modalidade: "PEAS / Assentamento",
-      processos: "37",
-      areaHa: "7.200",
-      custoMedio: "R$ 380",
-      pctTotal: "12%",
-      conversaoPct: 71,
+      modalidade: "Quilombola",
+      processos: "62",
+      areaHa: "15.200",
+      custoMedio: "R$ 455",
+      pctTotal: "23%",
+      conversaoPct: 84,
       barClass: "bg-purple-600",
     },
   ],
@@ -394,7 +440,7 @@ export const DADOS_PA: DadosDemonstracao = {
       municipios: 2,
       tecnicos: 12,
       dias: 45,
-      modalidades: "Doação + Compra",
+      modalidades: "REURB + Rural + Quilombola",
       badge: "Maior alcance",
     },
     {
@@ -404,7 +450,7 @@ export const DADOS_PA: DadosDemonstracao = {
       municipios: 1,
       tecnicos: 8,
       dias: 30,
-      modalidades: "Apenas doação",
+      modalidades: "Prioridade REURB",
       badge: "Recomendado",
     },
     {
@@ -414,7 +460,7 @@ export const DADOS_PA: DadosDemonstracao = {
       municipios: 1,
       tecnicos: 4,
       dias: 15,
-      modalidades: "Apenas doação",
+      modalidades: "Somente REURB",
       badge: "Menor custo",
     },
   ],
@@ -451,10 +497,10 @@ export const DADOS_PA: DadosDemonstracao = {
     },
     {
       grupo: "Qualidade e risco",
-      criterio: "Score SAF",
-      cenA: "74",
-      cenB: "82",
-      cenC: "88",
+      criterio: "Índice de viabilidade REURB",
+      cenA: "76",
+      cenB: "88",
+      cenC: "90",
       melhor: "C",
     },
     {
@@ -494,8 +540,10 @@ export const DADOS_PA: DadosDemonstracao = {
   pontuacaoCenarios: { A: 3, B: 9, C: 6 },
   textoRecomendacaoComparacao:
     "O Cenário B — Focado equilibra volume de títulos, eficiência operacional, custo por unidade e risco territorial. Mantém a campanha dentro da capacidade da equipe e prioriza glebas com melhor conversão e menor conflito.",
-  campanhaAcompMeta: "Rural · 9 municípios · 8 técnicos de campo",
-  acompanhamentoTipoFiltroPadrao: "todos",
+  campanhaAcompMeta: "REURB · 4 municípios · 3 equipes em campo",
+  campanhaAcompPctTempo: 58,
+  campanhaAcompPctTitulos: 48,
+  acompanhamentoTipoFiltroPadrao: "reurb",
   acompColunasRural: [
     "Município / etapa",
     "GAC",
@@ -520,10 +568,15 @@ export const DADOS_PA: DadosDemonstracao = {
       valores: [36, 33, 30, 22, 15, 11],
     },
   ],
-  acompColunasFinalizados: ["Município", "Títulos", "Área (ha)", "Modalidade"],
+  acompColunasFinalizados: [
+    "Município",
+    "Títulos emitidos",
+    "Área (ha)",
+    "Classificação REURB",
+  ],
   acompLinhasFinalizados: [
-    { rotulo: "Santa Izabel", valores: ["128", "4.920", "Doação"] },
-    { rotulo: "Irituia", valores: ["96", "3.410", "Doação"] },
+    { rotulo: "Santa Izabel", valores: ["128", "4.920", "REURB"] },
+    { rotulo: "Irituia", valores: ["96", "3.410", "Quilombola"] },
   ],
   acompColunasReurb: [
     "Núcleo / gleba",
@@ -535,7 +588,7 @@ export const DADOS_PA: DadosDemonstracao = {
   acompLinhasReurb: [
     {
       rotulo: "Bequimão — núcleo A",
-      valores: ["Urbano", "Elaboração", "54", "Aguardando parecer"],
+      valores: ["REURB", "Elaboração", "54", "Aguardando parecer"],
     },
   ],
   alertasGargalo: [
@@ -561,10 +614,10 @@ export const DADOS_PA: DadosDemonstracao = {
     },
   ],
   gargalosSetor: [
-    { setor: "CAF / GAM", pct: 72 },
-    { setor: "Téc. de campo", pct: 88 },
-    { setor: "CDI / Jurídico", pct: 64 },
-    { setor: "Geoprocessamento", pct: 45 },
+    { setor: "GAC", pct: 68 },
+    { setor: "GIS", pct: 52 },
+    { setor: "CDI", pct: 74 },
+    { setor: "TC", pct: 61 },
   ],
   historicoCampanha: [
     { quando: "15/04 09:47", texto: "Gargalo registrado: Viseu — 3ª etapa" },
@@ -576,11 +629,22 @@ export const DADOS_PA: DadosDemonstracao = {
       titulo: "Campanha Sudeste Paraense",
       progressoPct: 54,
       resumo: "1.120 proc. · 412 títulos",
+      pctTempo: 62,
+      pctTitulos: 51,
     },
     {
       titulo: "Campanha Marajó",
       progressoPct: 38,
       resumo: "640 proc. · 198 títulos",
+      pctTempo: 55,
+      pctTitulos: 38,
+    },
+    {
+      titulo: "Campanha Baixo Amazonas",
+      progressoPct: 44,
+      resumo: "890 proc. · 305 títulos",
+      pctTempo: 48,
+      pctTitulos: 44,
     },
   ],
   acompRodapeTotalCurso: "2.892",
@@ -599,19 +663,30 @@ export const DADOS_MA: DadosDemonstracao = {
     "Oeste Maranhense",
   ],
   municipiosSelect: ["Imperatriz", "Caxias", "Timon", "Balsas"],
-  glebasEstadualOpcoes: [
-    "Todas as glebas disponíveis",
-    "Gleba Cocais",
-    "Gleba Tocantins",
+  glebasPorTipoGleba: {
+    municipal: ["Gleba Cocais", "Gleba Tocantins", "Gleba Mearim"],
+    estadual: ["GLEBA MA-EST-01 — Meio-Norte", "GLEBA MA-EST-02 — Baixada"],
+    federal: ["GLEBA federal — Trecho BR-010", "GLEBA federal — Pericumã"],
+  },
+  processosColetivosOpcoes: [
+    "PC 101/2025 — REURB Imperatriz (coletivo)",
+    "PC 102/2025 — Núcleo Mearim",
+    "PC 098/2024 — Quilombolas do Tocantins",
   ],
+  equipesOperacionais: [
+    { id: "ma-eq-1", nome: "Equipe Imperatriz", processosPorDia: 1.2 },
+    { id: "ma-eq-2", nome: "Equipe Baixada", processosPorDia: 1.15 },
+    { id: "ma-eq-3", nome: "Equipe Oeste", processosPorDia: 1.05 },
+    { id: "ma-eq-4", nome: "Equipe Móvel", processosPorDia: 1.3 },
+  ],
+  previsaoTitulosPadrao: 280,
   kpiTitulosExibicao: 284,
   areaRegularizavelHa: "76.500",
   custoEstTitulo: "R$ 415",
   custoTotalEstimado: "R$ 118k",
   areaTituladaProjHa: "47.200",
   tempoMedioProcesso: "26 dias",
-  scoreSaf: "78",
-  scoreSafResumo: "SAF: 78/100 — Boa aptidão",
+  indiceViabilidadeReurb: "84",
   ocupacoesIdentificadas: "312",
   funilElegiveis: "271",
   funilCarAtivo: "244",
@@ -638,7 +713,7 @@ export const DADOS_MA: DadosDemonstracao = {
   kpiTitulosEmitidosGeral: "1.118",
   nomePlanoDefault: "Campanha Imperatriz — Maio 2025",
   justificativaExport:
-    "Campanha focada na Gleba Cocais e entorno de Imperatriz, com SAF elevado para o Meio-Norte Maranhense e apoio da EMATER. Objetivo: consolidar metas junto ao ITERMA.",
+    "Campanha focada na Gleba Cocais e entorno de Imperatriz, com REURB rural e núcleos quilombolas no Meio-Norte Maranhense e apoio da EMATER. Objetivo: consolidar metas junto ao ITERMA.",
   docUfOrgao: "ESTADO DO MARANHÃO — ITERMA",
   docTituloPlano: "Plano de Campanha Fundiária",
   docCampanha: "Imperatriz",
@@ -646,13 +721,12 @@ export const DADOS_MA: DadosDemonstracao = {
   docTitulosProj: "284",
   docAreaReg: "76.500 ha",
   docCustoTitulo: "R$ 415",
-  docSaf: "78 / 100",
   docGlebas: GLEBAS_MA,
   perfilBeneficiariosTotal: "312",
   perfilBeneficiariosFatias: [
-    { rotulo: "Agricultura familiar / Doação", pct: 58 },
-    { rotulo: "Onerosa (compra)", pct: 27 },
-    { rotulo: "Assentamento / PEAS", pct: 15 },
+    { rotulo: "REURB", pct: 42 },
+    { rotulo: "Rural", pct: 38 },
+    { rotulo: "Quilombola", pct: 20 },
   ],
   cronogramaSemanas: [
     {
@@ -693,30 +767,30 @@ export const DADOS_MA: DadosDemonstracao = {
   ],
   projecaoModalidades: [
     {
-      modalidade: "Doação (não onerosa)",
-      processos: "142",
-      areaHa: "22.100",
-      custoMedio: "R$ 238",
-      pctTotal: "58%",
-      conversaoPct: 92,
+      modalidade: "REURB",
+      processos: "108",
+      areaHa: "28.400",
+      custoMedio: "R$ 402",
+      pctTotal: "40%",
+      conversaoPct: 90,
       barClass: "bg-sicarf-green",
     },
     {
-      modalidade: "Compra (onerosa)",
-      processos: "71",
-      areaHa: "12.600",
-      custoMedio: "R$ 628",
-      pctTotal: "27%",
-      conversaoPct: 80,
+      modalidade: "Rural",
+      processos: "102",
+      areaHa: "29.800",
+      custoMedio: "R$ 378",
+      pctTotal: "38%",
+      conversaoPct: 86,
       barClass: "bg-sicarf-blue",
     },
     {
-      modalidade: "PEAS / Assentamento",
-      processos: "46",
-      areaHa: "8.100",
-      custoMedio: "R$ 392",
-      pctTotal: "15%",
-      conversaoPct: 69,
+      modalidade: "Quilombola",
+      processos: "66",
+      areaHa: "14.600",
+      custoMedio: "R$ 448",
+      pctTotal: "22%",
+      conversaoPct: 83,
       barClass: "bg-purple-600",
     },
   ],
@@ -728,7 +802,7 @@ export const DADOS_MA: DadosDemonstracao = {
       municipios: 2,
       tecnicos: 11,
       dias: 45,
-      modalidades: "Doação + Compra",
+      modalidades: "REURB + Rural + Quilombola",
       badge: "Maior alcance",
     },
     {
@@ -738,7 +812,7 @@ export const DADOS_MA: DadosDemonstracao = {
       municipios: 1,
       tecnicos: 9,
       dias: 30,
-      modalidades: "Apenas doação",
+      modalidades: "Prioridade REURB",
       badge: "Recomendado",
     },
     {
@@ -748,7 +822,7 @@ export const DADOS_MA: DadosDemonstracao = {
       municipios: 1,
       tecnicos: 4,
       dias: 15,
-      modalidades: "Apenas doação",
+      modalidades: "Somente REURB",
       badge: "Menor custo",
     },
   ],
@@ -785,10 +859,10 @@ export const DADOS_MA: DadosDemonstracao = {
     },
     {
       grupo: "Qualidade e risco",
-      criterio: "Score SAF",
-      cenA: "72",
-      cenB: "78",
-      cenC: "85",
+      criterio: "Índice de viabilidade REURB",
+      cenA: "74",
+      cenB: "84",
+      cenC: "87",
       melhor: "C",
     },
     {
@@ -828,8 +902,10 @@ export const DADOS_MA: DadosDemonstracao = {
   pontuacaoCenarios: { A: 3, B: 9, C: 6 },
   textoRecomendacaoComparacao:
     "O Cenário B — Focado equilibra volume de títulos, eficiência operacional, custo por unidade e risco territorial. Mantém a campanha dentro da capacidade da equipe e prioriza glebas com melhor conversão e menor conflito.",
-  campanhaAcompMeta: "Rural · 8 municípios · 7 técnicos de campo",
-  acompanhamentoTipoFiltroPadrao: "todos",
+  campanhaAcompMeta: "REURB · 5 municípios · 4 equipes em campo",
+  campanhaAcompPctTempo: 61,
+  campanhaAcompPctTitulos: 52,
+  acompanhamentoTipoFiltroPadrao: "reurb",
   acompColunasRural: [
     "Município / etapa",
     "Protocolo",
@@ -870,10 +946,15 @@ export const DADOS_MA: DadosDemonstracao = {
       ],
     },
   ],
-  acompColunasFinalizados: ["Município", "Títulos", "Área (ha)", "Modalidade"],
+  acompColunasFinalizados: [
+    "Município",
+    "Títulos emitidos",
+    "Área (ha)",
+    "Classificação REURB",
+  ],
   acompLinhasFinalizados: [
-    { rotulo: "Pedreiras", valores: ["112", "4.200", "Doação"] },
-    { rotulo: "Penalva", valores: ["88", "3.050", "Doação"] },
+    { rotulo: "Pedreiras", valores: ["112", "4.200", "REURB"] },
+    { rotulo: "Penalva", valores: ["88", "3.050", "Quilombola"] },
   ],
   acompColunasReurb: [
     "Núcleo / gleba",
@@ -885,7 +966,7 @@ export const DADOS_MA: DadosDemonstracao = {
   acompLinhasReurb: [
     {
       rotulo: "São Luís — núcleo Sul",
-      valores: ["Urbano", "Elaboração", "48", "Aguardando parecer"],
+      valores: ["REURB", "Elaboração", "48", "Aguardando parecer"],
     },
   ],
   alertasGargalo: [
@@ -911,10 +992,10 @@ export const DADOS_MA: DadosDemonstracao = {
     },
   ],
   gargalosSetor: [
-    { setor: "CAF / GAM", pct: 68 },
-    { setor: "Téc. de campo", pct: 84 },
-    { setor: "CDI / Jurídico", pct: 61 },
-    { setor: "Geoprocessamento", pct: 42 },
+    { setor: "Protocolo", pct: 66 },
+    { setor: "CTRU", pct: 58 },
+    { setor: "CAF", pct: 71 },
+    { setor: "Jurídico", pct: 63 },
   ],
   historicoCampanha: [
     { quando: "15/04 09:12", texto: "Gargalo registrado: Açailândia — 3ª etapa" },
@@ -926,11 +1007,22 @@ export const DADOS_MA: DadosDemonstracao = {
       titulo: "Campanha Oeste Maranhense",
       progressoPct: 51,
       resumo: "1.040 proc. · 388 títulos",
+      pctTempo: 59,
+      pctTitulos: 51,
     },
     {
       titulo: "Campanha Baixada Maranhense",
       progressoPct: 36,
       resumo: "602 proc. · 176 títulos",
+      pctTempo: 52,
+      pctTitulos: 36,
+    },
+    {
+      titulo: "Campanha Norte Maranhense",
+      progressoPct: 47,
+      resumo: "780 proc. · 264 títulos",
+      pctTempo: 44,
+      pctTitulos: 47,
     },
   ],
   acompRodapeTotalCurso: "2.540",

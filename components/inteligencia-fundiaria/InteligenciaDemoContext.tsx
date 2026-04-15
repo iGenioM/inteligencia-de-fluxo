@@ -21,6 +21,9 @@ interface InteligenciaDemoContextValue {
   /** Último dígito do CPF do login não é 0 nem 1 */
   invalido: boolean;
   dados: DadosDemonstracao;
+  /** Previsão informada em Parâmetros; exibida na projeção estimada e na etapa Projeção */
+  previsaoTitulos: number;
+  setPrevisaoTitulos: (v: number) => void;
 }
 
 const Ctx = createContext<InteligenciaDemoContextValue | null>(null);
@@ -34,6 +37,9 @@ function estadoInicialDoCookie(): EstadoAtivoGlobal {
 
 export function InteligenciaDemoProvider({ children }: { children: ReactNode }) {
   const [estadoAtivo, setEstadoAtivo] = useState<EstadoAtivoGlobal>("PA");
+  const [previsaoTitulos, setPrevisaoTitulos] = useState(
+    DADOS_PA.previsaoTitulosPadrao,
+  );
 
   useLayoutEffect(() => {
     setEstadoAtivo(estadoInicialDoCookie());
@@ -48,6 +54,10 @@ export function InteligenciaDemoProvider({ children }: { children: ReactNode }) 
   }, [estadoAtivo, invalido]);
 
   useLayoutEffect(() => {
+    setPrevisaoTitulos(dados.previsaoTitulosPadrao);
+  }, [dados.previsaoTitulosPadrao, dados.estadoId]);
+
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     window.estadoAtivo = estadoAtivo;
   }, [estadoAtivo]);
@@ -57,8 +67,10 @@ export function InteligenciaDemoProvider({ children }: { children: ReactNode }) 
       estadoAtivo,
       invalido,
       dados,
+      previsaoTitulos,
+      setPrevisaoTitulos,
     }),
-    [estadoAtivo, invalido, dados],
+    [estadoAtivo, invalido, dados, previsaoTitulos],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
