@@ -397,23 +397,20 @@ export function StepParametros() {
             <div className="mb-3 text-xs font-bold uppercase tracking-wide text-sicarf-gray-500">
               3. Capacidade operacional da equipe
             </div>
-            <div className="grid gap-3">
-              <div>
-                <label
-                  htmlFor={idEquipes}
-                  className="mb-1.5 block text-xs font-semibold text-sicarf-gray-700"
-                >
-                  Equipes
-                </label>
-                <SelectMultiEquipes
-                  id={idEquipes}
-                  equipes={dados.equipesOperacionais}
-                  selecionados={equipesSel}
-                  onChange={setEquipesSel}
-                />
-              </div>
-              <div className="gap-3 flex">
-                <div>
+            <div className="flex w-full flex-col gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                <div className="min-w-0 sm:col-span-2 lg:col-span-1">
+                  <FieldLabel htmlFor={idEquipes} obrigatorio>
+                    Equipes
+                  </FieldLabel>
+                  <SelectMultiEquipes
+                    id={idEquipes}
+                    equipes={dados.equipesOperacionais}
+                    selecionados={equipesSel}
+                    onChange={setEquipesSel}
+                  />
+                </div>
+                <div className="min-w-0">
                   <FieldLabel htmlFor={idDataInicio} obrigatorio>
                     Data inicial
                   </FieldLabel>
@@ -424,7 +421,7 @@ export function StepParametros() {
                     onChange={(e) => setDataInicio(e.target.value)}
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <FieldLabel htmlFor={idDataFim} obrigatorio>
                     Data final
                   </FieldLabel>
@@ -435,7 +432,9 @@ export function StepParametros() {
                     onChange={(e) => setDataFim(e.target.value)}
                   />
                 </div>
-                <div className="sm:col-span-2">
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="min-w-0">
                   <FieldLabel htmlFor={idProcDia}>
                     Processos/dia (equipes selecionadas)
                   </FieldLabel>
@@ -455,7 +454,7 @@ export function StepParametros() {
                     }
                   />
                 </div>
-                <div className="sm:col-span-2">
+                <div className="min-w-0">
                   <FieldLabel htmlFor={idPrevisaoTitulos} obrigatorio>
                     Previsão de títulos
                   </FieldLabel>
