@@ -2,13 +2,13 @@
 
 import type { ReactNode } from "react";
 import { Play, X } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import {
   InteligenciaSidebar,
   type InteligenciaNavId,
 } from "@/components/inteligencia-fundiaria/InteligenciaSidebar";
-import { AmapaMunicipiosMap } from "@/components/maps/AmapaMunicipiosMap";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Pill } from "@/components/ui/Pill";
@@ -16,6 +16,14 @@ import { SecTitle } from "@/components/ui/SecTitle";
 import { SubDesc } from "@/components/ui/SubDesc";
 import { Tabela, Td } from "@/components/ui/Tabela";
 import { S } from "@/lib/colors";
+
+const AmapaMunicipiosMap = dynamic(
+  () =>
+    import("@/components/maps/AmapaMunicipiosMap").then(
+      (m) => m.AmapaMunicipiosMap,
+    ),
+  { ssr: false },
+);
 
 type Etapa = {
   num: number;
