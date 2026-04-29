@@ -1,6 +1,6 @@
-# SICARF — Inteligencia Fundiaria
+# SICARF — Painel de Inteligência de Fluxo
 
-Painel web (Next.js) para dashboard de compliance e gestão/monitoramento de cartórios, com login por CPF e mapa de calor dos municípios do Pará (malhas IBGE).
+Painel web (Next.js) para monitoramento de fluxo operacional, identificação de gargalos, simulação de cenários e acompanhamento de municípios.
 
 ## Stack
 

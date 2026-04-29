@@ -1,5 +1,5 @@
-import { SicarfInteligenciaFundiaria } from "@/components/SicarfInteligenciaFundiaria";
+import { PainelFluxoV2 } from "@/components/PainelFluxoV2";
 
 export default function Home() {
-  return <SicarfInteligenciaFundiaria />;
+  return <PainelFluxoV2 />;
 }

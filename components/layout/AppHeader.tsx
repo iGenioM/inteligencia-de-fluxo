@@ -29,7 +29,9 @@ export function AppHeader() {
             <div className="truncate text-[13px] font-semibold text-sicarf-gray-800">
               Ronan Mendes
             </div>
-            <div className="text-[11px] text-sicarf-gray-500">Inteligencia Fundiaria</div>
+            <div className="text-[11px] text-sicarf-gray-500">
+              Painel de Inteligência de Fluxo
+            </div>
           </div>
         </div>
         <LogoutButton />

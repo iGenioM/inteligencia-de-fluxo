@@ -17,12 +17,12 @@ const ITENS: {
   {
     id: "simulador",
     Icon: ClipboardPen,
-    label: "Simulador de Campanha",
+    label: "Painel de Fluxo",
   },
   {
     id: "acompanhamento",
     Icon: Send,
-    label: "Campanhas e relatórios",
+    label: "Acompanhamento",
   },
 ];
 
