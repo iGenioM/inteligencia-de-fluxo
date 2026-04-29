@@ -1,8 +1,4 @@
 import { NextResponse } from "next/server";
-import {
-  COOKIE_REGIAO_DEMO,
-  estadoDemoFromCpf11,
-} from "@/lib/inteligencia-regiao-login";
 
 const COOKIE_OPTS = {
   path: "/",
@@ -30,16 +26,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const regiao = estadoDemoFromCpf11(cpfNumeros);
-
   const res = NextResponse.json({ ok: true });
   res.cookies.set("sicarf_auth", "1", {
     httpOnly: true,
-    ...COOKIE_OPTS,
-  });
-  /** Região do simulador (Pará / Maranhão) derivada do CPF — não armazena o CPF. */
-  res.cookies.set(COOKIE_REGIAO_DEMO, regiao, {
-    httpOnly: false,
     ...COOKIE_OPTS,
   });
   return res;
