@@ -5,12 +5,10 @@ import { Play, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { InteligenciaDemoProvider } from "@/components/inteligencia-fundiaria/InteligenciaDemoContext";
 import {
   InteligenciaSidebar,
   type InteligenciaNavId,
 } from "@/components/inteligencia-fundiaria/InteligenciaSidebar";
-import { StepAcompanhamento } from "@/components/inteligencia-fundiaria/InteligenciaSteps";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Pill } from "@/components/ui/Pill";
@@ -691,32 +689,25 @@ export function PainelFluxoV2() {
       <div className="flex min-h-0 flex-1">
         <InteligenciaSidebar ativo={navLateral} onNavigate={setNavLateral} />
         <main className="min-w-0 flex-1 overflow-auto bg-white p-6">
-          {navLateral === "acompanhamento" ? (
-            <div className="mx-auto max-w-[1400px] rounded-md border border-sicarf-gray-200 bg-white p-5">
-              <InteligenciaDemoProvider>
-                <StepAcompanhamento />
-              </InteligenciaDemoProvider>
-            </div>
-          ) : (
-            <div className="mx-auto max-w-[1400px] space-y-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-sicarf-gray-500">
-                    SICARF · Amapá Terras · Maio 2025
-                  </p>
-                  <h1 className="text-2xl font-bold text-sicarf-gray-800">Painel de Inteligência de Fluxo</h1>
-                  <p className="text-sm text-sicarf-gray-500">Fluxo completo · 16 etapas · 3.213 processos no sistema</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSim(true)}
-                  className="inline-flex items-center gap-2 rounded-md bg-sicarf-green px-4 py-2 text-sm font-bold text-white hover:bg-sicarf-green-dark"
-                >
-                  <Play className="size-4" /> Simulador Multi-Setor
-                </button>
+          <div className="mx-auto max-w-[1400px] space-y-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-sicarf-gray-500">
+                  SICARF · Amapá Terras · Maio 2025
+                </p>
+                <h1 className="text-2xl font-bold text-sicarf-gray-800">Painel de Inteligência de Fluxo</h1>
+                <p className="text-sm text-sicarf-gray-500">Fluxo completo · 16 etapas · 3.213 processos no sistema</p>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowSim(true)}
+                className="inline-flex items-center gap-2 rounded-md bg-sicarf-green px-4 py-2 text-sm font-bold text-white hover:bg-sicarf-green-dark"
+              >
+                <Play className="size-4" /> Simulador Multi-Setor
+              </button>
+            </div>
 
-              <PanelCard>
+            <PanelCard>
               <SecTitle>Visão Geral — Mês Atual</SecTitle>
               <SubDesc>Todos os dados consolidados do HTML aplicado no design system.</SubDesc>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -839,9 +830,8 @@ export function PainelFluxoV2() {
                   );
                 }}
               />
-              </PanelCard>
-            </div>
-          )}
+            </PanelCard>
+          </div>
         </main>
       </div>
       {showSim ? <SimuladorMulti onClose={() => setShowSim(false)} /> : null}
