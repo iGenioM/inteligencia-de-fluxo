@@ -9,7 +9,6 @@ import { MetricCard } from "@/components/ui/MetricCard";
 import { PanelCard } from "@/components/ui/PanelCard";
 import { Pill } from "@/components/ui/Pill";
 import { SecTitle } from "@/components/ui/SecTitle";
-import { SubDesc } from "@/components/ui/SubDesc";
 import { S } from "@/lib/colors";
 import type {
   AcompanhamentoTabelaLinha,
@@ -143,13 +142,13 @@ export function StepAcompanhamento() {
     return (
       <div className="mt-4 space-y-4 border-t border-sicarf-gray-200 pt-4">
         <TabelaAcompanhamento
-          titulo="Processos REURB em andamento"
+          titulo="Processos rurais em andamento"
           tituloClass="bg-sicarf-green-border"
           colunas={dados.acompColunasRural}
           linhas={dados.acompLinhasRural}
         />
         <TabelaAcompanhamento
-          titulo="Títulos emitidos — REURB"
+          titulo="Títulos emitidos — Rurais"
           tituloClass="bg-sicarf-green-dark"
           colunas={dados.acompColunasFinalizados}
           linhas={dados.acompLinhasFinalizados}
@@ -178,13 +177,13 @@ export function StepAcompanhamento() {
           <div className="flex flex-wrap gap-4 text-sicarf-gray-600">
             <span>
               <strong className="text-sicarf-gray-900">
-                Total em curso (REURB)
+                Total em curso
               </strong>{" "}
               {dados.acompRodapeTotalCurso}
             </span>
             <span>
               <strong className="text-sicarf-gray-900">
-                Títulos emitidos (REURB)
+                Títulos emitidos
               </strong>{" "}
               {dados.acompRodapeTitulosEmitidos}
             </span>
@@ -251,8 +250,10 @@ export function StepAcompanhamento() {
             defaultValue={dados.acompanhamentoTipoFiltroPadrao}
             aria-label="Tipo de processo"
           >
+            <option value="nao-oneroso">Não oneroso</option>
+            <option value="reurb">Oneroso</option>
             <option value="reurb">REURB</option>
-            <option value="todos">Todos (visão REURB)</option>
+            <option value="todos">Todos</option>
           </FormSelect>
         </div>
         <div className="flex flex-wrap items-center gap-2">

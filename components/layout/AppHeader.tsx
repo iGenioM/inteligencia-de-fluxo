@@ -27,7 +27,7 @@ export function AppHeader() {
           </div>
           <div className="hidden min-w-0 sm:block">
             <div className="truncate text-[13px] font-semibold text-sicarf-gray-800">
-              Ronan Mendes
+              Nayara Rodrigues
             </div>
             <div className="text-[11px] text-sicarf-gray-500">
               Painel de Inteligência de Fluxo

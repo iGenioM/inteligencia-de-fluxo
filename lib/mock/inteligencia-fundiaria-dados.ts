@@ -65,7 +65,7 @@ export const DADOS_ACOMPANHAMENTO_AMAPA: DadosAcompanhamentoAmapa = {
   kpiProcessosAbertos: "1.965",
   kpiTitulosEmitidosGeral: "1.262",
   kpiGargalosDetectados: "3",
-  kpiAguardandoCustasCrf: "306",
+  kpiAguardandoCustasCrf: "490",
   kpiTaxaConversao: "89%",
   acompanhamentoTipoFiltroPadrao: "reurb",
   campanhaAcompTitulo: "Campanha Metropolitana do Amapá — Macapá — 2026",
